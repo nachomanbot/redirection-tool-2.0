@@ -109,11 +109,12 @@ if uploaded_origin and uploaded_destination:
                 if fallback_url == '/' and re.search(r'\d{1,5}-[a-z0-9-]+', origin_url_normalized):
                     fallback_url = '/properties/sale'
 
-                # Neighborhood Redirection Rule - Check if the fallback is still the homepage and if the origin URL matches a city name
+                # Neighborhood Redirection Rule - Apply only if certain conditions are met
                 if (fallback_url == '/'
                     and origin_url_normalized not in ['/', '']  # More robust check for root paths
                     and not re.search(r'\.html$', origin_url_normalized)  # Skip URLs ending with .html
                     and not re.search(r'/go/', origin_url_normalized)  # Skip URLs with '/go/' pattern
+                    and not re.search(r'(test|careers|agent|page|about|contact|blog|faq|help)', origin_url_normalized)  # Skip specific keywords
                     and any(city_name.replace('-', ' ').lower().strip() in origin_url_normalized.replace('-', ' ') for city_name in city_names)):
                     fallback_url = '/neighborhoods'
 
