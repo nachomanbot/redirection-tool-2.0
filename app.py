@@ -127,7 +127,7 @@ if uploaded_origin and uploaded_destination:
         for idx, matched_url in enumerate(matches_df['matched_url']):
             origin_url = matches_df.at[idx, 'origin_url']
             origin_url_normalized = re.sub(r'^https?://', '', origin_url.lower().strip().rstrip('/'))  # Remove protocol and trailing slash
-            if origin_url_normalized in ['www.danadamsteam.com', '']:  # Match both absolute and relative homepages
+            if origin_url_normalized in ['www.danadamsteam.com', '', 'index.html']:  # Match both absolute and relative homepages, including index.html
                 matches_df.at[idx, 'matched_url'] = '/'
                 matches_df.at[idx, 'similarity_score'] = 'Homepage'
                 matches_df.at[idx, 'fallback_applied'] = 'Yes'
