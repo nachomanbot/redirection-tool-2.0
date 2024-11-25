@@ -10,11 +10,15 @@ import re
 st.title("AI-Powered Redirect Mapping Tool - Version 2.0")
 
 st.markdown("""
-⚡ **What It Is**  
+
+Relevancy Script made by Daniel Emery
+Everything else by: NDA
+
+⚡ **What It Is:**  
 This tool automates redirect mappings during site migrations by matching URLs from an old site to a new site based on content similarity and custom fallback rules for unmatched URLs.
 
 ⚡ **How to Use It:**  
-1. Upload `origin.csv` and `destination.csv` files. Ensure that your files are correctly formatted.
+1. Upload `origin.csv` and `destination.csv` files. Ensure that your files have the following headers: Address,Title 1,Meta Description 1,H1-1.
 2. The `rules.csv` will be automatically loaded from the backend.
 3. Click **"Let's Go!"** to initiate the matching process.
 4. Download the resulting `output.csv` file containing matched URLs with similarity scores or fallback rules.
