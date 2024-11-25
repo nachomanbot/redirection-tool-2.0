@@ -1,5 +1,7 @@
 streamlit
 pandas
 numpy
-faiss-cpu
 sentence-transformers
+faiss-cpu
+gspread
+oauth2client
