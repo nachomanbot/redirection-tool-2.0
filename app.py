@@ -70,10 +70,12 @@ if uploaded_origin and uploaded_destination:
         # Step 4: Custom String Matching Before Embedding
         matches = []
         progress_bar = st.progress(0)
-total_origin_urls = len(origin_df['Address'])
-processed_count = 0
+    total_origin_urls = len(origin_df['Address'])
+    processed_count = 0
 for origin_url in origin_df['Address']:
-            best_match = None
+    processed_count += 1
+    progress_bar.progress(processed_count / total_origin_urls)
+    best_match = None
             highest_score = 0
             origin_parts = origin_url.lower().split('/')
                 processed_count += 1
