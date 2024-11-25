@@ -106,7 +106,7 @@ if uploaded_origin and uploaded_destination:
                         break
 
                 # Neighborhood Redirection Rule - Check if the fallback is still the homepage and if the origin URL matches a city name
-                if fallback_url == '/' and any(city_name.replace('-', ' ').lower().strip() in origin_url_normalized.replace('-', ' ') for city_name in city_names):
+                if fallback_url == '/' and origin_url_normalized != '/' and any(city_name.replace('-', ' ').lower().strip() in origin_url_normalized.replace('-', ' ') for city_name in city_names):
                     fallback_url = '/neighborhoods'
 
                 # Update the DataFrame with the fallback URL
