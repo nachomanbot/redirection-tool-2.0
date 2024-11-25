@@ -27,10 +27,19 @@ uploaded_destination = st.file_uploader("Upload destination.csv", type="csv")
 
 # Load rules.csv from the backend
 rules_path = 'rules.csv'  # Path to the rules CSV on the backend
+us_cities_path = 'us_cities.csv'  # Path to the US cities CSV on the backend
+
 if os.path.exists(rules_path):
     rules_df = pd.read_csv(rules_path, encoding="ISO-8859-1")
 else:
     st.error("Rules file not found on the backend.")
+    st.stop()
+
+if os.path.exists(us_cities_path):
+    us_cities_df = pd.read_csv(us_cities_path, encoding="ISO-8859-1")
+    city_names = us_cities_df['CITY'].str.lower().str.strip().tolist()
+else:
+    st.error("US cities file not found on the backend.")
     st.stop()
 
 if uploaded_origin and uploaded_destination:
@@ -88,9 +97,12 @@ if uploaded_origin and uploaded_destination:
                 # Normalize the origin URL
                 origin_url_normalized = origin_url.lower().strip().rstrip('/')
 
-                # Neighborhood Redirection Rule
-                if re.match(r'^/[a-z-]+$', origin_url_normalized):
-                    fallback_url = '/neighborhoods'
+                # Neighborhood Redirection Rule - Check if the origin URL matches a city name
+                for city_name in city_names:
+                    city_name_normalized = city_name.replace('-', ' ').lower().strip()
+                    if city_name_normalized in origin_url_normalized.replace('-', ' '):
+                        fallback_url = '/neighborhoods'
+                        break
                 else:
                     # Apply CSV rules
                     applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
