@@ -5,7 +5,6 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import os
 import re
-from fuzzywuzzy import fuzz
 
 # Set the page title
 st.title("AI-Powered Redirect Mapping Tool - Version 2.0")
@@ -103,22 +102,13 @@ if uploaded_origin and uploaded_destination:
                 # Normalize the origin URL
                 origin_url_normalized = origin_url.lower().strip().rstrip('/')
 
-                # Apply Partial Match Check
-                highest_score = 0
-                for _, destination_url in destination_df.iterrows():
-                    score = fuzz.partial_ratio(origin_url_normalized, destination_url['Address'].lower().strip())
-                    if score > highest_score:
-                        highest_score = score
-                        fallback_url = destination_url['Address']
-
-                # Apply CSV rules if no partial match found
-                if highest_score < 65:
-                    applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
-                    for _, rule in applicable_rules.iterrows():
-                        keyword_normalized = rule['Keyword'].lower().strip().rstrip('/')
-                        if keyword_normalized in origin_url_normalized:
-                            fallback_url = rule['Destination URL Pattern']
-                            break
+                # Apply CSV rules
+                applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
+                for _, rule in applicable_rules.iterrows():
+                    keyword_normalized = rule['Keyword'].lower().strip().rstrip('/')
+                    if keyword_normalized in origin_url_normalized:
+                        fallback_url = rule['Destination URL Pattern']
+                        break
 
                 # Address Redirection Rule - Check if the origin URL looks like an address and set fallback to properties/sale
                 if fallback_url == '/' and re.search(r'\d{1,5}-[a-z0-9-]+', origin_url_normalized):
