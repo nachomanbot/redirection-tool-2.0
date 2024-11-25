@@ -6,12 +6,14 @@ Keyword,Rule Type,Destination URL Pattern,Priority
 /property,Category,/properties/sale,1
 /homes-for-sale,Category,/properties/sale,1
 /listing,Category,/properties/sale,1
+/rent,Category,/properties/sale,1
 /idx,Category,/properties/sale,1
 /blog/,Category,/blog,1
 /about-us,Category,/about,2
 /team,Category,/team,2
 /agent,Category,/team,2
 /staff,Category,/team,2
+/people,Category,/team,2
 /contact,Category,/contact,2
 /testimonials,Category,/testimonials,2
 /privacy,Category,/privacy-policy,2
@@ -19,3 +21,5 @@ Keyword,Rule Type,Destination URL Pattern,Priority
 /home-valuation,Category,/home-valuation,2
 /communities,Category,/neighborhoods,2
 /neighborhoods,Category,/neighborhoods,2
+/development,Category,/developments,2
+/new-development,Category,/developments,2
