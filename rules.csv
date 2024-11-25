@@ -1,5 +1,10 @@
 Keyword,Rule Type,Destination URL Pattern,Priority
 /blog/page/,Pagination,/blog,1
 /property/page/,Pagination,/properties/sale,1
+/property,Category,/properties/sale,1
+/homes-for-sale,Category,/properties/sale,1
+/listing,Category,/properties/sale,1
+/idx,Category,/properties/sale,1
+/blog/,Category,/blog,1
 /about-us,Category,/about,2
 /team,Category,/team,2
