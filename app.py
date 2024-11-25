@@ -5,7 +5,6 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import os
 import re
-from fuzzywuzzy import fuzz
 
 # Set the page title
 st.title("AI-Powered Redirect Mapping Tool - Version 2.0")
@@ -60,60 +59,18 @@ if uploaded_origin and uploaded_destination:
         st.stop()
 
     # Combine all columns for similarity matching
-    origin_df['combined_text'] = origin_df.apply(lambda x: (' '.join([x[0]] * 2) + ' ' + ' '.join(x.astype(str))), axis=1)  # Increase weight of URL
-    destination_df['combined_text'] = destination_df.apply(lambda x: (' '.join([x[0]] * 2) + ' ' + ' '.join(x.astype(str))), axis=1)  # Increase weight of URL
+    origin_df['combined_text'] = origin_df.apply(lambda x: (' '.join([x[0]] * 3) + ' ' + ' '.join(x.astype(str))), axis=1)  # Increase weight of URL
+    destination_df['combined_text'] = destination_df.apply(lambda x: (' '.join([x[0]] * 3) + ' ' + ' '.join(x.astype(str))), axis=1)  # Increase weight of URL
 
     # Step 3: Button to Process Matching
     if st.button("Let's Go!"):
         st.info("Processing data... This may take a while.")
 
-        # Step 4: Custom String Matching Before Embedding
-        matches = []
-        progress_bar = st.progress(0)
-    total_origin_urls = len(origin_df['Address'])
-    processed_count = 0
-for origin_url in origin_df['Address']:
-    processed_count += 1
-    progress_bar.progress(processed_count / total_origin_urls)
-    best_match = None
-            highest_score = 0
-            origin_parts = origin_url.lower().split('/')
-                processed_count += 1
-    progress_bar.progress(processed_count / total_origin_urls)
-    for destination_url in destination_df['Address']:
-                destination_parts = destination_url.lower().split('/')
-                common_parts = set(origin_parts) & set(destination_parts)
-                score = len(common_parts) / max(len(origin_parts), len(destination_parts)) * 100
-
-                # Use fuzzywuzzy for partial matching as a secondary check if no exact parts match
-                fuzzy_score = fuzz.partial_ratio(origin_url.lower(), destination_url.lower())
-                score = max(score, fuzzy_score)  # Use the higher score between common parts and fuzzy matching
-
-                if score > highest_score:
-                    highest_score = score
-                    best_match = destination_url
-
-            # If the match score is high enough, consider it a match
-            if highest_score >= 70:  # Lowered threshold for partial matching
-                matches.append((origin_url, best_match, highest_score / 100, 'Yes'))
-            else:
-                matches.append((origin_url, None, None, 'No'))
-
-        # Convert matches to DataFrame
-        matches_df = pd.DataFrame(matches, columns=['origin_url', 'matched_url', 'similarity_score', 'fallback_applied'])
-
-        # Separate matched and unmatched URLs
-        unmatched_df = matches_df[matches_df['matched_url'].isna()].copy()
-        matched_df = matches_df[~matches_df['matched_url'].isna()].copy()
-
-        # Proceed with embedding for unmatched URLs
-        unmatched_origin_df = origin_df[origin_df['Address'].isin(unmatched_df['origin_url'])]
-
         # Use a pre-trained model for embedding
         model = SentenceTransformer('all-MiniLM-L6-v2')
 
         # Vectorize the combined text
-        origin_embeddings = model.encode(unmatched_origin_df['combined_text'].tolist(), show_progress_bar=True)
+        origin_embeddings = model.encode(origin_df['combined_text'].tolist(), show_progress_bar=True)
         destination_embeddings = model.encode(destination_df['combined_text'].tolist(), show_progress_bar=True)
 
         # Create a FAISS index
@@ -127,22 +84,19 @@ for origin_url in origin_df['Address']:
         # Calculate similarity scores
         similarity_scores = 1 - (D / (np.max(D) + 1e-10))  # Add small value to avoid division by zero
 
-        # Create the output DataFrame with similarity scores for unmatched URLs
-        unmatched_results_df = pd.DataFrame({
-            'origin_url': unmatched_origin_df.iloc[:, 0],
+        # Create the output DataFrame with similarity scores
+        matches_df = pd.DataFrame({
+            'origin_url': origin_df.iloc[:, 0],
             'matched_url': destination_df.iloc[:, 0].iloc[I.flatten()].apply(lambda x: x.split()[0]).values,  # Ensure only the URL is added
             'similarity_score': np.round(similarity_scores.flatten(), 4),
-            'fallback_applied': ['No'] * len(unmatched_origin_df)  # Default to 'No' for fallback
+            'fallback_applied': ['No'] * len(origin_df)  # Default to 'No' for fallback
         })
 
-        # Combine matched and unmatched results after embedding matching
-        interim_results_df = pd.concat([matched_df, unmatched_results_df], ignore_index=True)
-
-        # Step 5: Apply Fallbacks for Low Scores
-        fallback_threshold = 0.6
-        for idx, score in enumerate(interim_results_df['similarity_score']):
+        # Step 4: Apply Fallbacks for Low Scores
+        fallback_threshold = 0.65
+        for idx, score in enumerate(matches_df['similarity_score']):
             if isinstance(score, (float, int)) and score < fallback_threshold:
-                origin_url = interim_results_df.at[idx, 'origin_url']
+                origin_url = matches_df.at[idx, 'origin_url']
                 fallback_url = "/"  # Default fallback to homepage
 
                 # Normalize the origin URL
@@ -170,26 +124,26 @@ for origin_url in origin_df['Address']:
                     fallback_url = '/neighborhoods'
 
                 # Update the DataFrame with the fallback URL
-                interim_results_df.at[idx, 'matched_url'] = fallback_url
-                interim_results_df.at[idx, 'similarity_score'] = 'Fallback'
-                interim_results_df.at[idx, 'fallback_applied'] = 'Yes'
+                matches_df.at[idx, 'matched_url'] = fallback_url
+                matches_df.at[idx, 'similarity_score'] = 'Fallback'
+                matches_df.at[idx, 'fallback_applied'] = 'Yes'
 
-        # Step 6: Final Check for Homepage Redirection
-        for idx, matched_url in enumerate(interim_results_df['matched_url']):
-            origin_url = interim_results_df.at[idx, 'origin_url']
+        # Step 5: Final Check for Homepage Redirection
+        for idx, matched_url in enumerate(matches_df['matched_url']):
+            origin_url = matches_df.at[idx, 'origin_url']
             origin_url_normalized = re.sub(r'^https?://', '', origin_url.lower().strip().rstrip('/'))  # Remove protocol and trailing slash
             if origin_url_normalized in ['', 'index.html', 'index.php', 'index.asp']:  # Match both absolute and relative homepages, including index.html, index.php, index.asp
-                interim_results_df.at[idx, 'matched_url'] = '/'
-                interim_results_df.at[idx, 'similarity_score'] = 'Homepage'
-                interim_results_df.at[idx, 'fallback_applied'] = 'Yes'
+                matches_df.at[idx, 'matched_url'] = '/'
+                matches_df.at[idx, 'similarity_score'] = 'Homepage'
+                matches_df.at[idx, 'fallback_applied'] = 'Yes'
 
-        # Step 7: Display and Download Results
+        # Step 6: Display and Download Results
         st.success("Matching complete! Download your results below.")
-        st.write(interim_results_df)
+        st.write(matches_df)
 
         st.download_button(
             label="Download Results as CSV",
-            data=interim_results_df.to_csv(index=False),
+            data=matches_df.to_csv(index=False),
             file_name="redirect_mapping_output_v2.csv",
             mime="text/csv",
         )
