@@ -178,7 +178,7 @@ for origin_url in origin_df['Address']:
         for idx, matched_url in enumerate(interim_results_df['matched_url']):
             origin_url = interim_results_df.at[idx, 'origin_url']
             origin_url_normalized = re.sub(r'^https?://', '', origin_url.lower().strip().rstrip('/'))  # Remove protocol and trailing slash
-            if origin_url_normalized in ['www.danadamsteam.com', '', 'index.html', 'index.php', 'index.asp']:  # Match both absolute and relative homepages, including index.html, index.php, index.asp
+            if origin_url_normalized in ['', 'index.html', 'index.php', 'index.asp']:  # Match both absolute and relative homepages, including index.html, index.php, index.asp
                 interim_results_df.at[idx, 'matched_url'] = '/'
                 interim_results_df.at[idx, 'similarity_score'] = 'Homepage'
                 interim_results_df.at[idx, 'fallback_applied'] = 'Yes'
