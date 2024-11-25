@@ -4,7 +4,6 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import faiss
 import os
-import re
 
 # Set the page title
 st.title("AI-Powered Redirect Mapping Tool - Version 2.0")
@@ -15,7 +14,7 @@ Relevancy Script made by Daniel Emery
 
 Everything else by: NDA
 
-⚡ **What It Is:**  
+⚡ **What It Is**  
 This tool automates redirect mappings during site migrations by matching URLs from an old site to a new site based on content similarity and custom fallback rules for unmatched URLs.
 
 ⚡ **How to Use It:**  
@@ -32,19 +31,10 @@ uploaded_destination = st.file_uploader("Upload destination.csv", type="csv")
 
 # Load rules.csv from the backend
 rules_path = 'rules.csv'  # Path to the rules CSV on the backend
-us_cities_path = 'us_cities.csv'  # Path to the US cities CSV on the backend
-
 if os.path.exists(rules_path):
     rules_df = pd.read_csv(rules_path, encoding="ISO-8859-1")
 else:
     st.error("Rules file not found on the backend.")
-    st.stop()
-
-if os.path.exists(us_cities_path):
-    us_cities_df = pd.read_csv(us_cities_path, encoding="ISO-8859-1")
-    city_names = us_cities_df['CITY'].str.lower().str.strip().tolist()
-else:
-    st.error("US cities file not found on the backend.")
     st.stop()
 
 if uploaded_origin and uploaded_destination:
@@ -102,51 +92,20 @@ if uploaded_origin and uploaded_destination:
                 # Normalize the origin URL
                 origin_url_normalized = origin_url.lower().strip().rstrip('/')
 
-                # Apply Partial Match Check
-                highest_score = 0
-                for _, destination_url in destination_df.iterrows():
-                    score = fuzz.partial_ratio(origin_url_normalized, destination_url['Address'].lower().strip())
-                    if score > highest_score:
-                        highest_score = score
-                        fallback_url = destination_url['Address']
-
-                # Apply CSV rules if no partial match found
-                if highest_score < 65:
-                    applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
-                    for _, rule in applicable_rules.iterrows():
-                        keyword_normalized = rule['Keyword'].lower().strip().rstrip('/')
-                        if keyword_normalized in origin_url_normalized:
-                            fallback_url = rule['Destination URL Pattern']
-                            break
-
-                # Address Redirection Rule - Check if the origin URL looks like an address and set fallback to properties/sale
-                if fallback_url == '/' and re.search(r'\d{1,5}-[a-z0-9-]+', origin_url_normalized):
-                    fallback_url = '/properties/sale'
-
-                # Neighborhood Redirection Rule - Apply only if certain conditions are met
-                if (fallback_url == '/'
-                    and origin_url_normalized not in ['/', '']  # More robust check for root paths
-                    and not re.search(r'\.html$', origin_url_normalized)  # Skip URLs ending with .html
-                    and not re.search(r'/go/', origin_url_normalized)  # Skip URLs with '/go/' pattern
-                    and not re.search(r'(test|careers|agent|page|about|contact|blog|faq|help)', origin_url_normalized)  # Skip specific keywords
-                    and any(city_name.replace('-', ' ').lower().strip() in origin_url_normalized.replace('-', ' ') for city_name in city_names)):
-                    fallback_url = '/neighborhoods'
+                # Apply CSV rules
+                applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
+                for _, rule in applicable_rules.iterrows():
+                    keyword_normalized = rule['Keyword'].lower().strip().rstrip('/')
+                    if keyword_normalized in origin_url_normalized:
+                        fallback_url = rule['Destination URL Pattern']
+                        break
 
                 # Update the DataFrame with the fallback URL
                 matches_df.at[idx, 'matched_url'] = fallback_url
                 matches_df.at[idx, 'similarity_score'] = 'Fallback'
                 matches_df.at[idx, 'fallback_applied'] = 'Yes'
 
-        # Step 5: Final Check for Homepage Redirection
-        for idx, matched_url in enumerate(matches_df['matched_url']):
-            origin_url = matches_df.at[idx, 'origin_url']
-            origin_url_normalized = re.sub(r'^https?://', '', origin_url.lower().strip().rstrip('/'))  # Remove protocol and trailing slash
-            if origin_url_normalized in ['', 'index.html', 'index.php', 'index.asp']:  # Match both absolute and relative homepages, including index.html, index.php, index.asp
-                matches_df.at[idx, 'matched_url'] = '/'
-                matches_df.at[idx, 'similarity_score'] = 'Homepage'
-                matches_df.at[idx, 'fallback_applied'] = 'Yes'
-
-        # Step 6: Display and Download Results
+        # Step 5: Display and Download Results
         st.success("Matching complete! Download your results below.")
         st.write(matches_df)
 
