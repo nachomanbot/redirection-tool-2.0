@@ -69,11 +69,16 @@ if uploaded_origin and uploaded_destination:
 
         # Step 4: Custom String Matching Before Embedding
         matches = []
-        for origin_url in origin_df['Address']:
+        progress_bar = st.progress(0)
+total_origin_urls = len(origin_df['Address'])
+processed_count = 0
+for origin_url in origin_df['Address']:
             best_match = None
             highest_score = 0
             origin_parts = origin_url.lower().split('/')
-            for destination_url in destination_df['Address']:
+                processed_count += 1
+    progress_bar.progress(processed_count / total_origin_urls)
+    for destination_url in destination_df['Address']:
                 destination_parts = destination_url.lower().split('/')
                 common_parts = set(origin_parts) & set(destination_parts)
                 score = len(common_parts) / max(len(origin_parts), len(destination_parts)) * 100
