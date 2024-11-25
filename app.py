@@ -4,6 +4,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import faiss
 import os
+import re
 
 # Set the page title
 st.title("AI-Powered Redirect Mapping Tool - Version 2.0")
@@ -87,13 +88,17 @@ if uploaded_origin and uploaded_destination:
                 # Normalize the origin URL
                 origin_url_normalized = origin_url.lower().strip().rstrip('/')
 
-                # Apply CSV rules
-                applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
-                for _, rule in applicable_rules.iterrows():
-                    keyword_normalized = rule['Keyword'].lower().strip().rstrip('/')
-                    if keyword_normalized in origin_url_normalized:
-                        fallback_url = rule['Destination URL Pattern']
-                        break
+                # Neighborhood Redirection Rule
+                if re.match(r'^/[a-z-]+$', origin_url_normalized):
+                    fallback_url = '/neighborhoods'
+                else:
+                    # Apply CSV rules
+                    applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
+                    for _, rule in applicable_rules.iterrows():
+                        keyword_normalized = rule['Keyword'].lower().strip().rstrip('/')
+                        if keyword_normalized in origin_url_normalized:
+                            fallback_url = rule['Destination URL Pattern']
+                            break
 
                 # Update the DataFrame with the fallback URL
                 matches_df.at[idx, 'matched_url'] = fallback_url
