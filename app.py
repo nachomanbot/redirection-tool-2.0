@@ -67,18 +67,27 @@ if uploaded_origin and uploaded_destination:
     if st.button("Let's Go!"):
         st.info("Processing data... This may take a while.")
 
-        # Step 4: String Matching Before Embedding
+        # Step 4: Custom String Matching Before Embedding
         matches = []
         for origin_url in origin_df['Address']:
             best_match = None
             highest_score = 0
+            origin_parts = origin_url.lower().split('/')
             for destination_url in destination_df['Address']:
-                score = fuzz.partial_ratio(origin_url.lower(), destination_url.lower())
+                destination_parts = destination_url.lower().split('/')
+                common_parts = set(origin_parts) & set(destination_parts)
+                score = len(common_parts) / max(len(origin_parts), len(destination_parts)) * 100
+
+                # Use fuzzy matching as a secondary check if no exact parts match
+                if score == 0:
+                    score = fuzz.partial_ratio(origin_url.lower(), destination_url.lower())
+
                 if score > highest_score:
                     highest_score = score
                     best_match = destination_url
-            # If the fuzzy match score is high enough, consider it a match
-            if highest_score >= 85:
+
+            # If the match score is high enough, consider it a match
+            if highest_score >= 70:  # Lowered threshold for partial matching
                 matches.append((origin_url, best_match, highest_score / 100, 'Yes'))
             else:
                 matches.append((origin_url, None, None, 'No'))
@@ -119,11 +128,14 @@ if uploaded_origin and uploaded_destination:
             'fallback_applied': ['No'] * len(unmatched_origin_df)  # Default to 'No' for fallback
         })
 
+        # Combine matched and unmatched results after embedding matching
+        interim_results_df = pd.concat([matched_df, unmatched_results_df], ignore_index=True)
+
         # Step 5: Apply Fallbacks for Low Scores
         fallback_threshold = 0.65
-        for idx, score in enumerate(unmatched_results_df['similarity_score']):
+        for idx, score in enumerate(interim_results_df['similarity_score']):
             if isinstance(score, (float, int)) and score < fallback_threshold:
-                origin_url = unmatched_results_df.at[idx, 'origin_url']
+                origin_url = interim_results_df.at[idx, 'origin_url']
                 fallback_url = "/"  # Default fallback to homepage
 
                 # Normalize the origin URL
@@ -151,29 +163,26 @@ if uploaded_origin and uploaded_destination:
                     fallback_url = '/neighborhoods'
 
                 # Update the DataFrame with the fallback URL
-                unmatched_results_df.at[idx, 'matched_url'] = fallback_url
-                unmatched_results_df.at[idx, 'similarity_score'] = 'Fallback'
-                unmatched_results_df.at[idx, 'fallback_applied'] = 'Yes'
-
-        # Combine matched and unmatched results
-        final_results_df = pd.concat([matched_df, unmatched_results_df], ignore_index=True)
+                interim_results_df.at[idx, 'matched_url'] = fallback_url
+                interim_results_df.at[idx, 'similarity_score'] = 'Fallback'
+                interim_results_df.at[idx, 'fallback_applied'] = 'Yes'
 
         # Step 6: Final Check for Homepage Redirection
-        for idx, matched_url in enumerate(final_results_df['matched_url']):
-            origin_url = final_results_df.at[idx, 'origin_url']
+        for idx, matched_url in enumerate(interim_results_df['matched_url']):
+            origin_url = interim_results_df.at[idx, 'origin_url']
             origin_url_normalized = re.sub(r'^https?://', '', origin_url.lower().strip().rstrip('/'))  # Remove protocol and trailing slash
             if origin_url_normalized in ['www.danadamsteam.com', '', 'index.html', 'index.php', 'index.asp']:  # Match both absolute and relative homepages, including index.html, index.php, index.asp
-                final_results_df.at[idx, 'matched_url'] = '/'
-                final_results_df.at[idx, 'similarity_score'] = 'Homepage'
-                final_results_df.at[idx, 'fallback_applied'] = 'Yes'
+                interim_results_df.at[idx, 'matched_url'] = '/'
+                interim_results_df.at[idx, 'similarity_score'] = 'Homepage'
+                interim_results_df.at[idx, 'fallback_applied'] = 'Yes'
 
         # Step 7: Display and Download Results
         st.success("Matching complete! Download your results below.")
-        st.write(final_results_df)
+        st.write(interim_results_df)
 
         st.download_button(
             label="Download Results as CSV",
-            data=final_results_df.to_csv(index=False),
+            data=interim_results_df.to_csv(index=False),
             file_name="redirect_mapping_output_v2.csv",
             mime="text/csv",
         )
