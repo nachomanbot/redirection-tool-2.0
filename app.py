@@ -13,25 +13,32 @@ st.markdown("""
 This tool automates redirect mappings during site migrations by matching URLs from an old site to a new site based on content similarity and custom fallback rules for unmatched URLs.
 
 ⚡ **How to Use It:**  
-1. Upload `origin.csv`, `destination.csv`, and `rules.csv` files. Ensure that your files are correctly formatted.
-2. Click **"Let's Go!"** to initiate the matching process.
-3. Download the resulting `output.csv` file containing matched URLs with similarity scores or fallback rules.
+1. Upload `origin.csv` and `destination.csv` files. Ensure that your files are correctly formatted.
+2. The `rules.csv` will be automatically loaded from the backend.
+3. Click **"Let's Go!"** to initiate the matching process.
+4. Download the resulting `output.csv` file containing matched URLs with similarity scores or fallback rules.
 """)
 
 # Step 1: Upload Files
 st.header("Upload Your Files")
 uploaded_origin = st.file_uploader("Upload origin.csv", type="csv")
 uploaded_destination = st.file_uploader("Upload destination.csv", type="csv")
-uploaded_rules = st.file_uploader("Upload rules.csv", type="csv")
 
-if uploaded_origin and uploaded_destination and uploaded_rules:
+# Load rules.csv from the backend
+rules_path = 'rules.csv'  # Path to the rules CSV on the backend
+if os.path.exists(rules_path):
+    rules_df = pd.read_csv(rules_path, encoding="ISO-8859-1")
+else:
+    st.error("Rules file not found on the backend.")
+    st.stop()
+
+if uploaded_origin and uploaded_destination:
     st.success("Files uploaded successfully!")
     
     # Step 2: Load Data with Encoding Handling
     try:
         origin_df = pd.read_csv(uploaded_origin, encoding="ISO-8859-1")
         destination_df = pd.read_csv(uploaded_destination, encoding="ISO-8859-1")
-        rules_df = pd.read_csv(uploaded_rules, encoding="ISO-8859-1")
     except UnicodeDecodeError:
         st.error("Error reading CSV files. Please ensure they are saved in a supported encoding (UTF-8 or ISO-8859-1).")
         st.stop()
