@@ -59,8 +59,8 @@ if uploaded_origin and uploaded_destination:
         st.stop()
 
     # Combine all columns for similarity matching
-    origin_df['combined_text'] = origin_df.fillna('').apply(lambda x: ' '.join(x.astype(str)), axis=1)
-    destination_df['combined_text'] = destination_df.fillna('').apply(lambda x: ' '.join(x.astype(str)), axis=1)
+    origin_df['combined_text'] = origin_df.apply(lambda x: (' '.join([x[0]] * 3) + ' ' + ' '.join(x.astype(str))), axis=1)  # Increase weight of URL
+    destination_df['combined_text'] = destination_df.apply(lambda x: (' '.join([x[0]] * 3) + ' ' + ' '.join(x.astype(str))), axis=1)  # Increase weight of URL
 
     # Step 3: Button to Process Matching
     if st.button("Let's Go!"):
@@ -132,7 +132,7 @@ if uploaded_origin and uploaded_destination:
         for idx, matched_url in enumerate(matches_df['matched_url']):
             origin_url = matches_df.at[idx, 'origin_url']
             origin_url_normalized = re.sub(r'^https?://', '', origin_url.lower().strip().rstrip('/'))  # Remove protocol and trailing slash
-            if origin_url_normalized in ['www.danadamsteam.com', '', 'index.html']:  # Match both absolute and relative homepages, including index.html
+            if origin_url_normalized in ['www.danadamsteam.com', '', 'index.html', 'index.php', 'index.asp']:  # Match both absolute and relative homepages, including index.html, index.php, index.asp
                 matches_df.at[idx, 'matched_url'] = '/'
                 matches_df.at[idx, 'similarity_score'] = 'Homepage'
                 matches_df.at[idx, 'fallback_applied'] = 'Yes'
