@@ -137,7 +137,7 @@ for origin_url in origin_df['Address']:
         interim_results_df = pd.concat([matched_df, unmatched_results_df], ignore_index=True)
 
         # Step 5: Apply Fallbacks for Low Scores
-        fallback_threshold = 0.60
+        fallback_threshold = 0.65
         for idx, score in enumerate(interim_results_df['similarity_score']):
             if isinstance(score, (float, int)) and score < fallback_threshold:
                 origin_url = interim_results_df.at[idx, 'origin_url']
