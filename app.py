@@ -58,7 +58,7 @@ if uploaded_origin and uploaded_destination:
         D, I = faiss_index.search(origin_embeddings.astype('float32'), k=1)
 
         # Calculate similarity scores
-        similarity_scores = 1 - (D / np.max(D))
+        similarity_scores = 1 - (D / (np.max(D) + 1e-10))  # Add small value to avoid division by zero
 
         # Create the output DataFrame with similarity scores
         matches_df = pd.DataFrame({
@@ -72,7 +72,7 @@ if uploaded_origin and uploaded_destination:
         fallback_threshold = 0.6
         destination_urls = destination_df['combined_text'].tolist()  # Convert destination URLs to a list for fallback function
         for idx, score in enumerate(matches_df['similarity_score']):
-            if isinstance(score, float) and score < fallback_threshold:
+            if isinstance(score, (float, int)) and score < fallback_threshold:
                 origin_url = matches_df.at[idx, 'origin_url']
                 fallback_url = apply_fallback_rule(origin_url, destination_urls)  # Function to determine fallback based on URL category
                 matches_df.at[idx, 'matched_url'] = fallback_url
