@@ -4,6 +4,8 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import faiss
 import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 # Set the page title
 st.title("AI-Powered Redirect Mapping Tool - Version 2.0")
@@ -38,7 +40,22 @@ if uploaded_origin and uploaded_destination:
     origin_df['combined_text'] = origin_df.fillna('').apply(lambda x: ' '.join(x.astype(str)), axis=1)
     destination_df['combined_text'] = destination_df.fillna('').apply(lambda x: ' '.join(x.astype(str)), axis=1)
 
-    # Step 3: Button to Process Matching
+    # Step 3: Connect to Google Sheets for Rules
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets",
+             "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+    client = gspread.authorize(creds)
+
+    # Load the rules sheet
+    try:
+        sheet = client.open_by_key("1xzm76zzYCDeFMZRejF1onxJVcph6s7wosBKT5mJfQAo").sheet1
+        rules_df = pd.DataFrame(sheet.get_all_records())
+        st.success("Rules loaded successfully from Google Sheets!")
+    except Exception as e:
+        st.error(f"Error loading rules from Google Sheets: {e}")
+        st.stop()
+
+    # Step 4: Button to Process Matching
     if st.button("Let's Go!"):
         st.info("Processing data... This may take a while.")
 
@@ -68,7 +85,7 @@ if uploaded_origin and uploaded_destination:
             'fallback_applied': ['No'] * len(origin_df)  # Default to 'No' for fallback
         })
 
-        # Step 4: Apply Fallbacks for Low Scores
+        # Step 5: Apply Fallbacks for Low Scores
         fallback_threshold = 0.6
         destination_urls = destination_df['combined_text'].tolist()  # Convert destination URLs to a list for fallback function
         for idx, score in enumerate(matches_df['similarity_score']):
@@ -76,34 +93,19 @@ if uploaded_origin and uploaded_destination:
                 origin_url = matches_df.at[idx, 'origin_url']
                 fallback_url = "/"  # Default fallback to homepage
 
-                # Implement fallback logic here based on provided categories
-                if "about" in origin_url:
-                    for dest_url in destination_urls:
-                        if "about-us" in dest_url:
-                            fallback_url = dest_url.split()[0]  # Ensure only the URL is added
-                            break
-                elif "agent" in origin_url or "staff" in origin_url:
-                    for dest_url in destination_urls:
-                        if "team" in dest_url:
-                            fallback_url = dest_url.split()[0]  # Ensure only the URL is added
-                            break
-                elif "properties" in origin_url:
-                    for dest_url in destination_urls:
-                        if "properties" in dest_url:
-                            fallback_url = dest_url.split()[0]  # Ensure only the URL is added
-                            break
-                elif "blog" in origin_url:
-                    for dest_url in destination_urls:
-                        if "blog" in dest_url:
-                            fallback_url = dest_url.split()[0]  # Ensure only the URL is added
-                            break
+                # Apply Google Sheet rules
+                applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
+                for _, rule in applicable_rules.iterrows():
+                    if rule['Keyword'] in origin_url:
+                        fallback_url = rule['Destination URL Pattern']
+                        break
 
                 # Update the DataFrame with the fallback URL
                 matches_df.at[idx, 'matched_url'] = fallback_url
                 matches_df.at[idx, 'similarity_score'] = 'Fallback'
                 matches_df.at[idx, 'fallback_applied'] = 'Yes'
 
-        # Step 5: Display and Download Results
+        # Step 6: Display and Download Results
         st.success("Matching complete! Download your results below.")
         st.write(matches_df)
 
