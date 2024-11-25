@@ -12,6 +12,7 @@ st.title("AI-Powered Redirect Mapping Tool - Version 2.0")
 st.markdown("""
 
 Relevancy Script made by Daniel Emery
+
 Everything else by: NDA
 
 ⚡ **What It Is:**  
