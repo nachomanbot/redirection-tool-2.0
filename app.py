@@ -82,8 +82,7 @@ if uploaded_origin and uploaded_destination:
                 if score == 0:
                     score = fuzz.partial_ratio(origin_url.lower(), destination_url.lower())
                 if score == 0:
-                    score = difflib.SequenceMatcher(None, origin_url.lower(), destination_url.lower()).ratio() * 100
-
+                    
                 if score > highest_score:
                     highest_score = score
                     best_match = destination_url
