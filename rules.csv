@@ -23,3 +23,5 @@ Keyword,Rule Type,Destination URL Pattern,Priority
 /neighborhoods,Category,/neighborhoods,2
 /development,Category,/developments,2
 /new-development,Category,/developments,2
+/sell,Category,/properties/sale,3
+/buy,Category,/properties/sale,3
