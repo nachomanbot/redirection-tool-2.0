@@ -38,11 +38,7 @@ if uploaded_origin and uploaded_destination:
     origin_df['combined_text'] = origin_df.fillna('').apply(lambda x: ' '.join(x.astype(str)), axis=1)
     destination_df['combined_text'] = destination_df.fillna('').apply(lambda x: ' '.join(x.astype(str)), axis=1)
 
-    # Step 3: Save Data for Fallback Usage
-    destination_filepath = "destination_data.csv"
-    destination_df.to_csv(destination_filepath, index=False)
-
-    # Step 4: Button to Process Matching
+    # Step 3: Button to Process Matching
     if st.button("Let's Go!"):
         st.info("Processing data... This may take a while.")
 
@@ -72,17 +68,18 @@ if uploaded_origin and uploaded_destination:
             'fallback_applied': ['No'] * len(origin_df)  # Default to 'No' for fallback
         })
 
-        # Step 5: Apply Fallbacks for Low Scores
+        # Step 4: Apply Fallbacks for Low Scores
         fallback_threshold = 0.6
+        destination_urls = destination_df['combined_text'].tolist()  # Convert destination URLs to a list for fallback function
         for idx, score in enumerate(matches_df['similarity_score']):
             if isinstance(score, float) and score < fallback_threshold:
                 origin_url = matches_df.at[idx, 'origin_url']
-                fallback_url = apply_fallback_rule(origin_url, destination_filepath)  # Function to determine fallback based on URL category
+                fallback_url = apply_fallback_rule(origin_url, destination_urls)  # Function to determine fallback based on URL category
                 matches_df.at[idx, 'matched_url'] = fallback_url
                 matches_df.at[idx, 'similarity_score'] = 'Fallback'
                 matches_df.at[idx, 'fallback_applied'] = 'Yes'
 
-        # Step 6: Display and Download Results
+        # Step 5: Display and Download Results
         st.success("Matching complete! Download your results below.")
         st.write(matches_df)
 
@@ -93,11 +90,7 @@ if uploaded_origin and uploaded_destination:
             mime="text/csv",
         )
 
-def apply_fallback_rule(origin_url, destination_filepath):
-    # Load the destination data from the saved file
-    destination_df = pd.read_csv(destination_filepath, encoding="ISO-8859-1")
-    destination_urls = destination_df['combined_text']
-
+def apply_fallback_rule(origin_url, destination_urls):
     # Implement fallback logic here based on provided categories
     if "about" in origin_url:
         for dest_url in destination_urls:
