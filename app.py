@@ -63,7 +63,7 @@ if uploaded_origin and uploaded_destination:
         # Create the output DataFrame with similarity scores
         matches_df = pd.DataFrame({
             'origin_url': origin_df.iloc[:, 0],
-            'matched_url': destination_df.iloc[:, 0].iloc[I.flatten()].values,
+            'matched_url': destination_df.iloc[:, 0].iloc[I.flatten()].apply(lambda x: x.split()[0]).values,  # Ensure only the URL is added
             'similarity_score': np.round(similarity_scores.flatten(), 4),
             'fallback_applied': ['No'] * len(origin_df)  # Default to 'No' for fallback
         })
@@ -80,22 +80,22 @@ if uploaded_origin and uploaded_destination:
                 if "about" in origin_url:
                     for dest_url in destination_urls:
                         if "about-us" in dest_url:
-                            fallback_url = dest_url
+                            fallback_url = dest_url.split()[0]  # Ensure only the URL is added
                             break
                 elif "agent" in origin_url or "staff" in origin_url:
                     for dest_url in destination_urls:
                         if "team" in dest_url:
-                            fallback_url = dest_url
+                            fallback_url = dest_url.split()[0]  # Ensure only the URL is added
                             break
                 elif "properties" in origin_url:
                     for dest_url in destination_urls:
                         if "properties" in dest_url:
-                            fallback_url = dest_url
+                            fallback_url = dest_url.split()[0]  # Ensure only the URL is added
                             break
                 elif "blog" in origin_url:
                     for dest_url in destination_urls:
                         if "blog" in dest_url:
-                            fallback_url = dest_url
+                            fallback_url = dest_url.split()[0]  # Ensure only the URL is added
                             break
 
                 # Update the DataFrame with the fallback URL
