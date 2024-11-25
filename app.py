@@ -74,7 +74,31 @@ if uploaded_origin and uploaded_destination:
         for idx, score in enumerate(matches_df['similarity_score']):
             if isinstance(score, (float, int)) and score < fallback_threshold:
                 origin_url = matches_df.at[idx, 'origin_url']
-                fallback_url = apply_fallback_rule(origin_url, destination_urls)  # Function to determine fallback based on URL category
+                fallback_url = "/"  # Default fallback to homepage
+
+                # Implement fallback logic here based on provided categories
+                if "about" in origin_url:
+                    for dest_url in destination_urls:
+                        if "about-us" in dest_url:
+                            fallback_url = dest_url
+                            break
+                elif "agent" in origin_url or "staff" in origin_url:
+                    for dest_url in destination_urls:
+                        if "team" in dest_url:
+                            fallback_url = dest_url
+                            break
+                elif "properties" in origin_url:
+                    for dest_url in destination_urls:
+                        if "properties" in dest_url:
+                            fallback_url = dest_url
+                            break
+                elif "blog" in origin_url:
+                    for dest_url in destination_urls:
+                        if "blog" in dest_url:
+                            fallback_url = dest_url
+                            break
+
+                # Update the DataFrame with the fallback URL
                 matches_df.at[idx, 'matched_url'] = fallback_url
                 matches_df.at[idx, 'similarity_score'] = 'Fallback'
                 matches_df.at[idx, 'fallback_applied'] = 'Yes'
@@ -89,24 +113,3 @@ if uploaded_origin and uploaded_destination:
             file_name="redirect_mapping_output_v2.csv",
             mime="text/csv",
         )
-
-def apply_fallback_rule(origin_url, destination_urls):
-    # Implement fallback logic here based on provided categories
-    if "about" in origin_url:
-        for dest_url in destination_urls:
-            if "about-us" in dest_url:
-                return dest_url
-    elif "agent" in origin_url or "staff" in origin_url:
-        for dest_url in destination_urls:
-            if "team" in dest_url:
-                return dest_url
-    elif "properties" in origin_url:
-        for dest_url in destination_urls:
-            if "properties" in dest_url:
-                return dest_url
-    elif "blog" in origin_url:
-        for dest_url in destination_urls:
-            if "blog" in dest_url:
-                return dest_url
-    # Add more fallback rules based on the PDF logic provided
-    return "/"  # Default to homepage if no match is found
