@@ -14,7 +14,7 @@ Relevancy Script made by Daniel Emery
 
 Everything else by: NDA
 
-⚡ **What It Is**  
+⚡ **What It Is:**  
 This tool automates redirect mappings during site migrations by matching URLs from an old site to a new site based on content similarity and custom fallback rules for unmatched URLs.
 
 ⚡ **How to Use It:**  
