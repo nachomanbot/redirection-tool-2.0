@@ -111,7 +111,7 @@ if uploaded_origin and uploaded_destination:
 
                 # Neighborhood Redirection Rule - Check if the fallback is still the homepage and if the origin URL matches a city name
                 if (fallback_url == '/'
-                    and origin_url_normalized not in ['/', 'https://www.danadamsteam.com', 'https://www.danadamsteam.com/']
+                    and origin_url_normalized not in ['/', '']  # More robust check for root paths
                     and not re.search(r'\.html$', origin_url_normalized)  # Skip URLs ending with .html
                     and not re.search(r'/go/', origin_url_normalized)  # Skip URLs with '/go/' pattern
                     and any(city_name.replace('-', ' ').lower().strip() in origin_url_normalized.replace('-', ' ') for city_name in city_names)):
@@ -122,7 +122,15 @@ if uploaded_origin and uploaded_destination:
                 matches_df.at[idx, 'similarity_score'] = 'Fallback'
                 matches_df.at[idx, 'fallback_applied'] = 'Yes'
 
-        # Step 5: Display and Download Results
+        # Step 5: Final Check for Homepage Redirection
+        for idx, matched_url in enumerate(matches_df['matched_url']):
+            origin_url = matches_df.at[idx, 'origin_url']
+            if origin_url.lower().strip().rstrip('/') in ['/', '']:
+                matches_df.at[idx, 'matched_url'] = '/'
+                matches_df.at[idx, 'similarity_score'] = 'Homepage'
+                matches_df.at[idx, 'fallback_applied'] = 'Yes'
+
+        # Step 6: Display and Download Results
         st.success("Matching complete! Download your results below.")
         st.write(matches_df)
 
