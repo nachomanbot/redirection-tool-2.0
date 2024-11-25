@@ -78,9 +78,11 @@ if uploaded_origin and uploaded_destination:
                 common_parts = set(origin_parts) & set(destination_parts)
                 score = len(common_parts) / max(len(origin_parts), len(destination_parts)) * 100
 
-                # Use fuzzy matching as a secondary check if no exact parts match
+                # Use fuzzywuzzy for partial matching as a secondary check if no exact parts match
                 if score == 0:
                     score = fuzz.partial_ratio(origin_url.lower(), destination_url.lower())
+                if score == 0:
+                    score = difflib.SequenceMatcher(None, origin_url.lower(), destination_url.lower()).ratio() * 100
 
                 if score > highest_score:
                     highest_score = score
