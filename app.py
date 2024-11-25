@@ -70,7 +70,7 @@ if uploaded_origin and uploaded_destination:
         # Step 4: Apply Fallbacks for Low Scores
         fallback_threshold = 0.6
         for idx, score in enumerate(matches_df['similarity_score']):
-            if score < fallback_threshold:
+            if isinstance(score, float) and score < fallback_threshold:
                 origin_url = matches_df.at[idx, 'origin_url']
                 fallback_url = apply_fallback_rule(origin_url, destination_df['combined_text'])  # Function to determine fallback based on URL category
                 matches_df.at[idx, 'matched_url'] = fallback_url
