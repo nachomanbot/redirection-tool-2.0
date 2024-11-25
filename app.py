@@ -79,16 +79,19 @@ if uploaded_origin and uploaded_destination:
 
         # Step 4: Apply Fallbacks for Low Scores
         fallback_threshold = 0.6
-        destination_urls = destination_df['combined_text'].tolist()  # Convert destination URLs to a list for fallback function
         for idx, score in enumerate(matches_df['similarity_score']):
             if isinstance(score, (float, int)) and score < fallback_threshold:
                 origin_url = matches_df.at[idx, 'origin_url']
                 fallback_url = "/"  # Default fallback to homepage
 
+                # Normalize the origin URL
+                origin_url_normalized = origin_url.lower().strip().rstrip('/')
+
                 # Apply CSV rules
                 applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
                 for _, rule in applicable_rules.iterrows():
-                    if rule['Keyword'] in origin_url:
+                    keyword_normalized = rule['Keyword'].lower().strip().rstrip('/')
+                    if keyword_normalized in origin_url_normalized:
                         fallback_url = rule['Destination URL Pattern']
                         break
 
