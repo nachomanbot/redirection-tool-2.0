@@ -79,8 +79,7 @@ if uploaded_origin and uploaded_destination:
                 score = len(common_parts) / max(len(origin_parts), len(destination_parts)) * 100
 
                 # Use fuzzywuzzy for partial matching as a secondary check if no exact parts match
-                if score == 0:
-                    score = fuzz.partial_ratio(origin_url.lower(), destination_url.lower())
+                score = fuzz.partial_ratio(origin_url.lower(), destination_url.lower())
                 if score == 0:
                     
                 if score > highest_score:
