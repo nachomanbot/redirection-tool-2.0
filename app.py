@@ -4,8 +4,6 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import faiss
 import os
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 # Set the page title
 st.title("AI-Powered Redirect Mapping Tool - Version 2.0")
@@ -15,7 +13,7 @@ st.markdown("""
 This tool automates redirect mappings during site migrations by matching URLs from an old site to a new site based on content similarity and custom fallback rules for unmatched URLs.
 
 ⚡ **How to Use It:**  
-1. Upload `origin.csv` and `destination.csv` files. Ensure that your file contains the URL, Title, Meta Description, and H1.
+1. Upload `origin.csv`, `destination.csv`, and `rules.csv` files. Ensure that your files are correctly formatted.
 2. Click **"Let's Go!"** to initiate the matching process.
 3. Download the resulting `output.csv` file containing matched URLs with similarity scores or fallback rules.
 """)
@@ -24,14 +22,16 @@ This tool automates redirect mappings during site migrations by matching URLs fr
 st.header("Upload Your Files")
 uploaded_origin = st.file_uploader("Upload origin.csv", type="csv")
 uploaded_destination = st.file_uploader("Upload destination.csv", type="csv")
+uploaded_rules = st.file_uploader("Upload rules.csv", type="csv")
 
-if uploaded_origin and uploaded_destination:
+if uploaded_origin and uploaded_destination and uploaded_rules:
     st.success("Files uploaded successfully!")
     
     # Step 2: Load Data with Encoding Handling
     try:
         origin_df = pd.read_csv(uploaded_origin, encoding="ISO-8859-1")
         destination_df = pd.read_csv(uploaded_destination, encoding="ISO-8859-1")
+        rules_df = pd.read_csv(uploaded_rules, encoding="ISO-8859-1")
     except UnicodeDecodeError:
         st.error("Error reading CSV files. Please ensure they are saved in a supported encoding (UTF-8 or ISO-8859-1).")
         st.stop()
@@ -40,22 +40,7 @@ if uploaded_origin and uploaded_destination:
     origin_df['combined_text'] = origin_df.fillna('').apply(lambda x: ' '.join(x.astype(str)), axis=1)
     destination_df['combined_text'] = destination_df.fillna('').apply(lambda x: ' '.join(x.astype(str)), axis=1)
 
-    # Step 3: Connect to Google Sheets for Rules
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets",
-             "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
-    client = gspread.authorize(creds)
-
-    # Load the rules sheet
-    try:
-        sheet = client.open_by_key("1xzm76zzYCDeFMZRejF1onxJVcph6s7wosBKT5mJfQAo").sheet1
-        rules_df = pd.DataFrame(sheet.get_all_records())
-        st.success("Rules loaded successfully from Google Sheets!")
-    except Exception as e:
-        st.error(f"Error loading rules from Google Sheets: {e}")
-        st.stop()
-
-    # Step 4: Button to Process Matching
+    # Step 3: Button to Process Matching
     if st.button("Let's Go!"):
         st.info("Processing data... This may take a while.")
 
@@ -85,7 +70,7 @@ if uploaded_origin and uploaded_destination:
             'fallback_applied': ['No'] * len(origin_df)  # Default to 'No' for fallback
         })
 
-        # Step 5: Apply Fallbacks for Low Scores
+        # Step 4: Apply Fallbacks for Low Scores
         fallback_threshold = 0.6
         destination_urls = destination_df['combined_text'].tolist()  # Convert destination URLs to a list for fallback function
         for idx, score in enumerate(matches_df['similarity_score']):
@@ -93,7 +78,7 @@ if uploaded_origin and uploaded_destination:
                 origin_url = matches_df.at[idx, 'origin_url']
                 fallback_url = "/"  # Default fallback to homepage
 
-                # Apply Google Sheet rules
+                # Apply CSV rules
                 applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
                 for _, rule in applicable_rules.iterrows():
                     if rule['Keyword'] in origin_url:
@@ -105,7 +90,7 @@ if uploaded_origin and uploaded_destination:
                 matches_df.at[idx, 'similarity_score'] = 'Fallback'
                 matches_df.at[idx, 'fallback_applied'] = 'Yes'
 
-        # Step 6: Display and Download Results
+        # Step 5: Display and Download Results
         st.success("Matching complete! Download your results below.")
         st.write(matches_df)
 
