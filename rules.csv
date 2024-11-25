@@ -16,7 +16,10 @@ Keyword,Rule Type,Destination URL Pattern,Priority
 /people,Category,/team,2
 /contact,Category,/contact,2
 /testimonials,Category,/testimonials,2
+/clients-say,Category,/testimonials,2
+/what-our-clients-say,Category,/testimonials,2
 /privacy,Category,/privacy-policy,2
+/terms,Category,/privacy-policy,2
 /disclaimer,Category,/dmca-notice,2
 /home-valuation,Category,/home-valuation,2
 /communities,Category,/neighborhoods,2
