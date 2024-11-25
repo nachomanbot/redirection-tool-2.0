@@ -97,20 +97,17 @@ if uploaded_origin and uploaded_destination:
                 # Normalize the origin URL
                 origin_url_normalized = origin_url.lower().strip().rstrip('/')
 
-                # Neighborhood Redirection Rule - Check if the origin URL matches a city name
-                for city_name in city_names:
-                    city_name_normalized = city_name.replace('-', ' ').lower().strip()
-                    if city_name_normalized in origin_url_normalized.replace('-', ' '):
-                        fallback_url = '/neighborhoods'
+                # Apply CSV rules
+                applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
+                for _, rule in applicable_rules.iterrows():
+                    keyword_normalized = rule['Keyword'].lower().strip().rstrip('/')
+                    if keyword_normalized in origin_url_normalized:
+                        fallback_url = rule['Destination URL Pattern']
                         break
-                else:
-                    # Apply CSV rules
-                    applicable_rules = rules_df.sort_values(by='Priority')  # Sort rules by priority
-                    for _, rule in applicable_rules.iterrows():
-                        keyword_normalized = rule['Keyword'].lower().strip().rstrip('/')
-                        if keyword_normalized in origin_url_normalized:
-                            fallback_url = rule['Destination URL Pattern']
-                            break
+
+                # Neighborhood Redirection Rule - Check if the fallback is still the homepage and if the origin URL matches a city name
+                if fallback_url == '/' and any(city_name.replace('-', ' ').lower().strip() in origin_url_normalized.replace('-', ' ') for city_name in city_names):
+                    fallback_url = '/neighborhoods'
 
                 # Update the DataFrame with the fallback URL
                 matches_df.at[idx, 'matched_url'] = fallback_url
